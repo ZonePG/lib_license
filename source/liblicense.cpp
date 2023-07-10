@@ -24,31 +24,6 @@ std::ostream &operator<<(std::ostream &os, const License &license) {
     return os;
 }
 
-std::string GetLocalMacAddr() {
-    int fd;
-    struct ifreq ifr;
-    char *iface = "eno1";
-    unsigned char *mac = NULL;
-
-    memset(&ifr, 0, sizeof(ifr));
-
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-
-    ifr.ifr_addr.sa_family = AF_INET;
-    strncpy(ifr.ifr_name, iface, IFNAMSIZ - 1);
-
-    if (0 == ioctl(fd, SIOCGIFHWADDR, &ifr)) {
-        mac = (unsigned char *)ifr.ifr_hwaddr.sa_data;
-
-        // display mac address
-        // printf("Mac : %.2X:%.2X:%.2X:%.2X:%.2X:%.2X\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    }
-    close(fd);
-    char buf[18];
-    snprintf(buf, sizeof(buf), "%02X-%02X-%02X-%02X-%02X-%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    return std::string(buf);
-}
-
 std::ostream &operator<<(std::ostream &os, const LicenseCrypto &licCrypto) {
     aes256_context ctx;
     aes256_init(&ctx, gKey);
@@ -81,9 +56,21 @@ License::License(std::istream &is) {
     }
 }
 
-std::pair<bool, std::string> License::Check() const {
-    if (GetLocalMacAddr() != m_mac)
+std::pair<bool, std::string> License::Check(const std::string &strMac, const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion) const {
+    if (strMac != m_mac)
         return std::make_pair(false, "The MAC Address does not match.");
+
+    if (cpuId != m_cpu_id)
+        return std::make_pair(false, "The CPU ID does not match.");
+
+    if (diskId != m_disk_id)
+        return std::make_pair(false, "The Disk ID does not match.");
+
+    if (sceneName != m_scene_name)
+        return std::make_pair(false, "The Scene Name does not match.");
+
+    if (sceneVersion != m_scene_version)
+        return std::make_pair(false, "The Scene Version does not match.");
 
     if (std::chrono::system_clock::now() > m_expire)
         return std::make_pair(false, "The license has expired.");

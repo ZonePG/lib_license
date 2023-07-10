@@ -22,24 +22,20 @@ class License {
 public:
     License(const std::string &strMac, const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion, int month);
     License(std::istream &is);
-    std::pair<bool, std::string> Check() const;
-    //! @brief Output License object("MAC date time")
+    std::pair<bool, std::string> Check(const std::string &strMac, const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion) const;
     friend std::ostream &operator<<(std::ostream &os, const License &license);
 };
 
-//! @brief Get local Netcard physical address.
-std::string GetLocalMacAddr();
-
 class LicenseCrypto {
     std::shared_ptr<License> m_pLic;
+
 public:
     LicenseCrypto(const std::shared_ptr<License> &pLic) :
         m_pLic(pLic) {
     }
     LicenseCrypto(std::istream &is);
-    std::pair<bool, std::string> Check() const {
-        return m_pLic->Check();
+    std::pair<bool, std::string> Check(const std::string &strMac, const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion) const {
+        return m_pLic->Check(strMac, cpuId, diskId, sceneName, sceneVersion);
     }
-    //! @brief Output LicenseCrypto object("Passphrase")
     friend std::ostream &operator<<(std::ostream &os, const LicenseCrypto &licCrypto);
 };
