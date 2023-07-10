@@ -13,10 +13,14 @@ class License {
     using months = std::chrono::duration<int, std::ratio_divide<years::period, std::ratio<12>>>;
 
     std::string m_mac;
+    std::string m_cpu_id;
+    std::string m_disk_id;
+    std::string m_scene_name;
+    std::string m_scene_version;
     std::chrono::system_clock::time_point m_expire;
 
 public:
-    License(const std::string &strMac, int month);
+    License(const std::string &strMac, const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion, int month);
     License(std::istream &is);
     std::pair<bool, std::string> Check() const;
     //! @brief Output License object("MAC date time")
