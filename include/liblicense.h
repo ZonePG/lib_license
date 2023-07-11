@@ -13,16 +13,14 @@ class License {
     using months = std::chrono::duration<int, std::ratio_divide<years::period, std::ratio<12>>>;
 
     std::string m_mac;
-    std::string m_cpu_id;
-    std::string m_disk_id;
     std::string m_scene_name;
     std::string m_scene_version;
     std::chrono::system_clock::time_point m_expire;
 
 public:
-    License(const std::string &strMac, const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion, int month);
+    License(const std::string &strMac, const std::string &sceneName, const std::string &sceneVersion, int month);
     License(std::istream &is);
-    std::pair<bool, std::string> Check(const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion) const;
+    std::pair<bool, std::string> Check(const std::string &sceneName, const std::string &sceneVersion) const;
     friend std::ostream &operator<<(std::ostream &os, const License &license);
 };
 
@@ -34,8 +32,8 @@ public:
         m_pLic(pLic) {
     }
     LicenseCrypto(std::istream &is);
-    std::pair<bool, std::string> Check(const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion) const {
-        return m_pLic->Check(cpuId, diskId, sceneName, sceneVersion);
+    std::pair<bool, std::string> Check(const std::string &sceneName, const std::string &sceneVersion) const {
+        return m_pLic->Check(sceneName, sceneVersion);
     }
     friend std::ostream &operator<<(std::ostream &os, const LicenseCrypto &licCrypto);
 };

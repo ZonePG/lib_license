@@ -22,7 +22,7 @@ constexpr static unsigned char gKey[] = "n#If^*:Y4;-xH&<Ozj/Zybq]~@%,JC'o"; // c
 
 std::ostream &operator<<(std::ostream &os, const License &license) {
     auto expire_day = std::chrono::system_clock::to_time_t(license.m_expire);
-    os << license.m_mac << " " << license.m_cpu_id << " " << license.m_disk_id << " " << license.m_scene_name << " " << license.m_scene_version << " " << std::put_time(std::localtime(&expire_day), "%F %T");
+    os << license.m_mac << " " << license.m_scene_name << " " << license.m_scene_version << " " << std::put_time(std::localtime(&expire_day), "%F %T");
 
     return os;
 }
@@ -104,31 +104,25 @@ std::ostream &operator<<(std::ostream &os, const LicenseCrypto &licCrypto) {
     return os;
 }
 
-License::License(const std::string &strMac, const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion, int month) :
-    m_mac(strMac), m_cpu_id(cpuId), m_disk_id(diskId), m_scene_name(sceneName), m_scene_version(sceneVersion), m_expire(std::chrono::system_clock::now() + months{month}) {
+License::License(const std::string &strMac, const std::string &sceneName, const std::string &sceneVersion, int month) :
+    m_mac(strMac), m_scene_name(sceneName), m_scene_version(sceneVersion), m_expire(std::chrono::system_clock::now() + months{month}) {
     std::transform(m_mac.begin(), m_mac.end(), m_mac.begin(), ::tolower);
 }
 
 License::License(std::istream &is) {
     std::tm tm = {};
     try {
-        is >> m_mac >> m_cpu_id >> m_disk_id >> m_scene_name >> m_scene_version >> std::get_time(&tm, "%Y-%m-%d %T");
+        is >> m_mac >> m_scene_name >> m_scene_version >> std::get_time(&tm, "%Y-%m-%d %T");
         m_expire = std::chrono::system_clock::from_time_t(std::mktime(&tm));
     } catch (const std::exception &e) {
         std::cout << e.what();
     }
 }
 
-std::pair<bool, std::string> License::Check(const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion) const {
+std::pair<bool, std::string> License::Check(const std::string &sceneName, const std::string &sceneVersion) const {
     std::vector<std::string> all_macs = GetAllMacAddresses();
     if (std::find(all_macs.begin(), all_macs.end(), m_mac) == all_macs.end())
         return std::make_pair(false, "The MAC Address does not match.");
-
-    if (cpuId != m_cpu_id)
-        return std::make_pair(false, "The CPU ID does not match.");
-
-    if (diskId != m_disk_id)
-        return std::make_pair(false, "The Disk ID does not match.");
 
     if (sceneName != m_scene_name)
         return std::make_pair(false, "The Scene Name does not match.");
