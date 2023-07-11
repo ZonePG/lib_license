@@ -22,7 +22,7 @@ class License {
 public:
     License(const std::string &strMac, const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion, int month);
     License(std::istream &is);
-    std::pair<bool, std::string> Check(const std::string &strMac, const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion) const;
+    std::pair<bool, std::string> Check(const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion) const;
     friend std::ostream &operator<<(std::ostream &os, const License &license);
 };
 
@@ -34,8 +34,8 @@ public:
         m_pLic(pLic) {
     }
     LicenseCrypto(std::istream &is);
-    std::pair<bool, std::string> Check(const std::string &strMac, const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion) const {
-        return m_pLic->Check(strMac, cpuId, diskId, sceneName, sceneVersion);
+    std::pair<bool, std::string> Check(const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion) const {
+        return m_pLic->Check(cpuId, diskId, sceneName, sceneVersion);
     }
     friend std::ostream &operator<<(std::ostream &os, const LicenseCrypto &licCrypto);
 };

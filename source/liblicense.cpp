@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <string.h>
 #include <ctime>
 #include <iomanip>
@@ -6,12 +7,16 @@
 #include <streambuf>
 #include <iterator>
 #include <stdio.h>
+#include <string>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <unistd.h>
 #include <liblicense.h>
 #include <aes256.h>
+#include <vector>
+#include <dirent.h>
+#include <fstream>
 
 constexpr static unsigned char gKey[] = "n#If^*:Y4;-xH&<Ozj/Zybq]~@%,JC'o"; // custom
 
@@ -20,6 +25,65 @@ std::ostream &operator<<(std::ostream &os, const License &license) {
     os << license.m_mac << " " << license.m_cpu_id << " " << license.m_disk_id << " " << license.m_scene_name << " " << license.m_scene_version << " " << std::put_time(std::localtime(&expire_day), "%F %T");
 
     return os;
+}
+
+std::vector<std::string> GetAllFiles(const std::string &folder, bool recursive = false) {
+    // uses opendir, readdir, and struct dirent.
+    std::vector<std::string> files;
+
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir(folder.c_str())) != NULL) {
+        while ((ent = readdir(dir)) != NULL) {
+            std::string name = ent->d_name;
+            if (name == "." || name == "..")
+                continue;
+            files.push_back(folder + name);
+            if (recursive && ent->d_type == DT_DIR) {
+                std::vector<std::string> more = GetAllFiles(folder + name + "/", recursive);
+                files.insert(files.end(), more.begin(), more.end());
+            }
+        }
+        closedir(dir);
+    }
+
+    return files;
+}
+
+bool ReadFileContents(const std::string &folder, const std::string &fname, std::string &contents) {
+    // uses ifstream to read entire contents
+    std::ifstream ifs(folder + "/" + fname);
+    if (ifs.is_open()) {
+        ifs >> contents;
+        return true;
+    }
+    return false;
+}
+
+std::vector<std::string> GetAllMacAddresses() {
+    std::vector<std::string> macs;
+    std::string address;
+
+    // from: https://stackoverflow.com/questions/9034575/c-c-linux-mac-address-of-all-interfaces
+    //  ... just read /sys/class/net/eth0/address
+
+    // NOTE: there may be more than one: /sys/class/net/*/address
+    //  (1) so walk /sys/class/net/* to find the names to read the address of.
+
+    std::vector<std::string> nets = GetAllFiles("/sys/class/net/", false);
+    for (auto it = nets.begin(); it != nets.end(); ++it) {
+        // we don't care about the local loopback interface
+        if (0 == strcmp((*it).substr(it->size() - 3).c_str(), "/lo"))
+            continue;
+        address.clear();
+        if (ReadFileContents(*it, "address", address)) {
+            if (!address.empty()) {
+                std::transform(address.begin(), address.end(), address.begin(), ::tolower);
+                macs.push_back(address);
+            }
+        }
+    }
+    return macs;
 }
 
 std::ostream &operator<<(std::ostream &os, const LicenseCrypto &licCrypto) {
@@ -42,6 +106,7 @@ std::ostream &operator<<(std::ostream &os, const LicenseCrypto &licCrypto) {
 
 License::License(const std::string &strMac, const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion, int month) :
     m_mac(strMac), m_cpu_id(cpuId), m_disk_id(diskId), m_scene_name(sceneName), m_scene_version(sceneVersion), m_expire(std::chrono::system_clock::now() + months{month}) {
+    std::transform(m_mac.begin(), m_mac.end(), m_mac.begin(), ::tolower);
 }
 
 License::License(std::istream &is) {
@@ -54,8 +119,9 @@ License::License(std::istream &is) {
     }
 }
 
-std::pair<bool, std::string> License::Check(const std::string &strMac, const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion) const {
-    if (strMac != m_mac)
+std::pair<bool, std::string> License::Check(const std::string &cpuId, const std::string &diskId, const std::string &sceneName, const std::string &sceneVersion) const {
+    std::vector<std::string> all_macs = GetAllMacAddresses();
+    if (std::find(all_macs.begin(), all_macs.end(), m_mac) == all_macs.end())
         return std::make_pair(false, "The MAC Address does not match.");
 
     if (cpuId != m_cpu_id)
