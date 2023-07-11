@@ -13,8 +13,6 @@
 #include <liblicense.h>
 #include <aes256.h>
 
-#pragma warning(disable : 4996) //_CRT_SECURE_NO_WARNINGS
-
 constexpr static unsigned char gKey[] = "n#If^*:Y4;-xH&<Ozj/Zybq]~@%,JC'o"; // custom
 
 std::ostream &operator<<(std::ostream &os, const License &license) {
